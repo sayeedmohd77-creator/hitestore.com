@@ -1,9 +1,16 @@
 {
   "name": "hitestore-localhost",
   "private": true,
-  "version": "0.1.0",
-  "description": "HiteStore offline fashion storefront prototype",
-  "scripts": {"start":"node server.js","dev":"node server.js","check":"node --check server.js && node --check js/app.js && node --check js/data.js", "test":"node tools/smoke-test.js"},
-  "engines": {"node": ">=18"},
+  "version": "0.3.0",
+  "description": "HiteStore V3 local-only commerce prototype with test accounts, addresses and server-side COD orders",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node --check server.js && node --check backend/dev-commerce.js && node --check js/app.js && node --check js/data.js && node --check js/v3.js",
+    "test": "node tools/smoke-test.js && node tools/v3-api-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "license": "UNLICENSED"
 }

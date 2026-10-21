@@ -7,3 +7,6 @@ node_modules/
 .idea/
 coverage/
 dist/
+# V3 local development store: may contain test account / address data; never commit
+runtime/
+*.v1-backup

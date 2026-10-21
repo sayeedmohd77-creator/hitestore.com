@@ -1,40 +1,42 @@
-# HiteStore — manual testing checklist
+# HiteStore V3 — QA Checklist (Local only)
 
-Test locally with `node server.js`, then open `http://localhost:3009`:
+## Automated tests
+- [ ] `node --check server.js`
+- [ ] `node --check backend/dev-commerce.js`
+- [ ] `node --check js/app.js`
+- [ ] `node --check js/v3.js`
+- [ ] `node tools/smoke-test.js` — legacy shopping and COD browser demo tests
+- [ ] `node tools/v3-api-test.js` — end-to-end local auth, COD, order status and persistence tests
 
-- [ ] Home opens and all pictures display without internet.
-- [ ] Men, Women, Kids and Accessories menu links filter products.
-- [ ] Search for `Kurta` returns relevant products.
-- [ ] Shop filter size `M` and sorting by `Price: low to high` work.
-- [ ] Open a product, select a size, change quantity and add to shopping bag.
-- [ ] Heart icon adds/removes an item from Wishlist.
-- [ ] Bag quantities increase/decrease; removing item works.
-- [ ] Apply coupon `WELCOME10`; discount appears.
-- [ ] Place a **demo** order (no payment). Orders screen lists it.
-- [ ] Admin inventory stock decreases for the simulated order.
-- [ ] In Admin, change stock; refresh the browser and verify it persists.
-- [ ] In Admin, add a demo product, then find it in catalogue search.
-- [ ] Reload browser and verify cart/wishlist/admin demo data persists.
-- [ ] Check layout on a phone-sized Chrome window and a normal laptop screen.
-- [ ] Admin > Demo settings > Reset demo data, and confirm restored state.
+## Manual Chrome checks
+- [ ] `http://localhost:3009` loads with the official HiteStore logo.
+- [ ] Women, Men, Kids, Accessories, wishlist and original cart continue working.
+- [ ] `#/account` opens sign-up and login forms. Register with invented email/name/password.
+- [ ] In product `p02`, add size M to cart. `#/checkout` shows your bag.
+- [ ] Enter fabricated address, ten-digit phone and syntactically valid 6-digit Indian PIN (format only).
+- [ ] Confirm simulated COD payment and submit the V3 checkout.
+- [ ] `#/my-orders` shows the server-backed order and *pending collection*.
+- [ ] Refresh browser: order remains. Restart local server and log in again: order remains.
+- [ ] `#/manage-orders` requires a staff password before displaying orders.
+- [ ] Try marking PACKED, SHIPPED, DELIVERED, or CANCELLED and test-only collection.
+- [ ] Confirm a wrong admin password is rejected, ordinary customer cannot access admin API.
+- [ ] Use only invented data. Do not enter real buyers, shipping addresses or real payment information.
+- [ ] Verify older `#/orders` remains labelled as browser-only demo history.
 
-**Before production:** authentication, customer accounts, secure payments, real order processing, GST invoices, product photography, stock locking, legal pages, shipping, returns, database, admin security, backups, monitoring and deployment are all outstanding.
+## Before live launch — blocking
+- [ ] Production authentication, RBAC, safe password recovery and data protection
+- [ ] Transactional database and stock reservations; product variants and images
+- [ ] Authenticated order processing; coupons and taxes recalculated on the server
+- [ ] Verified delivery ZIP/PIN serviceability, courier COD settlement, fraud controls
+- [ ] Complete privacy/cookie, shipping, returns/refunds and terms policies
+- [ ] Gateway integration with server-to-server webhook verification
+- [ ] Staging QA, security review, domain renewal, SSL and backups
+- [ ] Remove/disable every demo order, browser admin, and unprotected test feature
 
-## V2 QA
-- [ ] Shop brand filter narrows product cards; price and available-only filters combine correctly.
-- [ ] Search SKU HT-P02 shows Weekend Midi Dress.
-- [ ] Admin stock table shows SKU, in-stock/low/out-of-stock labels, and low-stock totals.
-- [ ] Export Inventory CSV downloads a file with product SKUs and quantities.
-- [ ] Existing cart, wishlist and demo order workflows still work.
+### V3 checkout validation fix
 
-## Cash on Delivery (COD) checkout — localhost only
-
-- [ ] Add an in-stock item to the bag and open the bag page.
-- [ ] Under **CHOOSE PAYMENT METHOD**, COD is selected. Online payment is disabled as coming soon.
-- [ ] Confirm **Amount due on delivery** matches the order total after any demo coupon and shipping.
-- [ ] Click **PLACE COD DEMO ORDER** and check the orders page shows **Cash on Delivery · Payment pending (demo)**.
-- [ ] Open `#/admin` → Demo orders, verify the payment method and **Pending collection (demo)**.
-- [ ] Click **MARK COD COLLECTED (DEMO)** and verify the status becomes **Collected (demo)**.
-- [ ] Refresh Chrome: payment selection status of saved demo order persists in browser storage.
-
-**Important:** This does not take real orders or payments. Do not ask for delivery address or customer contact in this browser-only demo. Production COD needs postal-code/serviceability checks, fraud controls, authenticated server-side order records, accurate courier reconciliation and actual collections.
+- [ ] Enter a short address (`hyd`) on the COD test checkout; see one clear `Address line 1 needs at least 8 characters` error.
+- [ ] Click submit again: error must not duplicate.
+- [ ] Enter a 10-digit invented mobile number and a full fictitious street address with at least 8 characters, a city, state and a six-digit PIN beginning 1–9.
+- [ ] Submit one demo COD order and confirm it appears under `#/my-orders` with payment pending.
+- [ ] This is still LOCAL TEST ONLY: do not enter any real customer details or publish to the live domain.

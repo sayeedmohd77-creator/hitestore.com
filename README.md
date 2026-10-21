@@ -1,99 +1,80 @@
-# HiteStore.com — Offline development prototype
+# HiteStore V3 — Local Development
 
-**A self-contained, responsive fashion shopping storefront for Windows localhost.** No subscriptions, API keys, database, npm install, or external network connection are needed to view this prototype. All demo illustrations are bundled locally. The logo/art are provisional branding, not extracted from Myntra.
+A **local-only** fashion storefront with an incremental, server-backed ecommerce test workflow. **This is not production ready.** The Hostinger website and DNS remain untouched. The current browser-only V2 demo is preserved for comparison.
 
-## Start on Windows PowerShell
+## Before you start
 
-1. Extract the ZIP archive into `C:\HiteStore` (a folder named `hitestore-localhost` should appear).
-2. Install **Node.js LTS** if you do not have it already. HTECSBooks may have installed Node previously.
-3. Open PowerShell:
+- Windows with Node.js v18+ and Git installed.
+- Source checkout: `C:\HiteStore\hitestore-localhost` (the same folder as V2).
+- To avoid losing existing work, run `git status` **before applying an update**. Do not overwrite local uncommitted changes.
+- All images are development illustrations; your official HiteStore logo is already integrated.
+- **Use invented test information, not real addresses, passwords, or customer records.**
+
+## Run V3 in Windows PowerShell
+
+Open one **new** PowerShell window, then run:
 
 ```powershell
 cd C:\HiteStore\hitestore-localhost
-node server.js
+$secure = Read-Host "Choose a LOCAL TEST admin password (minimum 12 characters)" -AsSecureString
+$ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+try { $env:HITESTORE_ADMIN_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
+finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
+node .\server.js
 ```
 
-4. Visit **http://localhost:3009** in Chrome or Edge. Keep PowerShell open. Press **Ctrl+C** to stop.
+Keep this PowerShell running. In Chrome open **http://127.0.0.1:3009** (or `http://localhost:3009`).
 
-Alternatively from the project folder run:
+If another HiteStore server is already listening on port 3009, stop only that **older HiteStore process** first; do not kill other development apps. Run `Get-NetTCPConnection -LocalPort 3009 -State Listen` to inspect the port.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\start-hitestore.ps1
-```
+## New V3 routes
 
-If port 3009 is busy, set an alternate port with `$env:PORT=3010; node server.js` and browse `http://localhost:3010`.
+- `#/account` — local customer sign-up / sign-in using password hashing and HttpOnly session cookies.
+- `#/checkout` — test recipient, mobile, Indian PIN format and COD (requires customer sign-in).
+- `#/my-orders` — orders saved by the local server to a file, scoped to the signed-in test customer.
+- `#/manage-orders` — staff login with PowerShell admin password, server-backed demo order workflow.
+- `#/cart` — still contains the **old browser demo** button; also links to V3 test checkout.
+- `#/admin` — old **unsecured browser demo**, not a production admin console; keep offline only.
 
-## Working demo functionality
+The V3 order API calculates prices and discounts on the server from seeded products, checks product sizes/quantity/stock, creates COD orders with payment pending, and lets authenticated staff move them through **test-only** statuses. Invalid transitions fail. Cancellation restores demo stock.
 
-- Responsive homepage, category sections and promotional editorial panels.
-- Men/Women/Kids/Accessories catalogue, product pages, search, category/size filters, price/discount/rating sorting.
-- Product sizes, colour information, inventory, wishlist, quantity-controlled shopping cart.
-- **WELCOME10** demo coupon, demo shipping threshold, **Cash on Delivery (COD) demo checkout**, and local demo order history.
-- Demo `/admin` dashboard: inventory changes, add/delete custom demo products, simulated order status, reset.
-- Data persists **only in this browser's localStorage**, not between devices.
-- Product art is illustrative (offline SVGs), not licensed brand photography or real inventory.
+`runtime/demo-store.json` persists between restarts, **is never committed to Git**, and is deliberately inaccessible through the static HTTP server. It is a single-machine development JSON store, NOT an audit-proof, concurrency-safe production database. Browser-local old-demo orders and V3 server-backed orders remain separate.
 
-## Connect to GitHub (separate repository)
+**PIN validation checks format only** — not actual courier availability. Online payments, GST invoice generation, fulfilment, email/SMS notifications and courier integration are NOT ACTIVE.
 
-Your linked GitHub account currently has `sayeedmohd77-creator/htecs.com`. A separate `hitestore.com` repository was not accessible when checked; **do not mix the projects**.
-
-1. Sign into GitHub at https://github.com/new and create an **empty** repository named `hitestore.com` under `sayeedmohd77-creator`. Recommend **Private** during development. Do not initialize README/gitignore/license.
-2. Extract this project locally. Install Git for Windows if needed.
-3. From PowerShell in this folder run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\connect-github.ps1
-```
-
-The script uses a fixed remote `https://github.com/sayeedmohd77-creator/hitestore.com.git`, asks for confirmation, initializes Git if necessary, commits files, and pushes `main`. GitHub authentication is required and **no credentials are included**. If the repository already contains work, do not blindly push: first reconcile its history to avoid losing data.
-
-Manual alternative:
-
-```powershell
-git init
-git branch -M main
-git add .
-git commit -m "Initial offline HiteStore storefront prototype"
-git remote add origin https://github.com/sayeedmohd77-creator/hitestore.com.git
-git push -u origin main
-```
-
-For future changes: `git add .; git commit -m "Update storefront"; git push`.
-
-## Routes
-
-- `#/` Homepage
-- `#/shop` All products and filters
-- `#/shop?category=Women` Women's category
-- `#/product/p02` Product detail
-- `#/wishlist`, `#/cart`, `#/orders`
-- `#/admin` **UNPROTECTED DEMO PANEL**
-
-## Important limitations — NOT production-ready
-
-This is a **front-end proof of concept** with an offline local server. There is no secure sign-in, persistent server-side database, legitimate payment gateway, real COD collections, delivery serviceability validation, secure order processing, stock locking, product image uploads, courier tracking, tax-invoice engine, audit logging, or customer data protection. **Do not deploy this demo as a live public store** or collect real buyer information. Before launch, add a properly authenticated backend or migrate storefront to WooCommerce, configure payments/shipping/GST/privacy/refunds and use real photos and branding. Hostinger Website Builder source files do not automatically sync with this project; the existing domain/site is untouched.
-
-## Stack
-
-Vanilla HTML/CSS/JavaScript + Node.js built-in HTTP server (zero runtime dependencies). Easy to version in GitHub and edit in VS Code without paid code-generation credits. The implementation deliberately separates demo UI and local state to allow an eventual production backend integration.
-
-## Development QA
+## Verification
 
 ```powershell
 node --check .\server.js
+node --check .\backend\dev-commerce.js
 node --check .\js\app.js
-node --check .\js\data.js
+node --check .\js\v3.js
+node .\tools\smoke-test.js
+node .\tools\v3-api-test.js
 ```
 
-Also manually check home, category search, product/size selection, cart, coupon, placing a **demo** order, inventory deduction, and admin stock changes.
+After tests, commit and push **only source files**:
 
-## V2: Catalogue and inventory enhancement
-Shop now filters by brand, price ceiling, in-stock availability, size and category, and search supports SKUs (`HT-P02`). Local demo admin at `/#/admin` shows SKUs, a low-stock counter and a CSV inventory download. Demo records remain only in this browser (no backend login or payments).
+```powershell
+git status
+git add .gitignore README.md QA-CHECKLIST.md package.json index.html server.js css/styles.css js/app.js js/v3.js backend/dev-commerce.js tools/v3-api-test.js
+git commit -m "HiteStore V3 local accounts delivery COD backend"
+git push origin main
+```
 
-To update an existing GitHub-linked localhost installation, close any editors, back up your files, extract the V2 patch into your project folder, and reload Chrome (Ctrl+F5). Verify tests before committing.
+Do **not** commit `runtime/` data or `.env` files. No real password is included in this repository. Direct GitHub writes from the ChatGPT connector might fail due to permission restrictions; PowerShell pushes use your existing Git login.
 
-## Cash on Delivery demo (October 2026)
+## Production milestones remaining
 
-The bag page shows a selected Cash on Delivery option and a disabled Online Payment (coming soon) option. Creating a COD **demo** order stores `paymentMethod: COD` and `paymentStatus: PENDING_COLLECTION` in browser storage, without collecting real delivery details or charging anyone. Order history and the admin demo panel show payment status. The admin demo can mark COD as *simulated collected* to test the workflow.
+1. Replace the local JSON store with PostgreSQL or an appropriate transactional database; database transactions and inventory reservations per SKU/size. Migrate browser-local demo stock into real data models.
+2. Secure backend code and threat model: real session storage, account/email verification and reset, admin RBAC, comprehensive auditing, input schemas, server-rate limiting backed by shared storage, deployment secrets, backups, monitoring, privacy and consent management.
+3. Admin product catalogue with secure image uploads, per-variant stock, vendor/supplier records, coupons/tax rules, returns and refunds.
+4. Verify GST registration/invoicing obligations with a qualified professional. Configure tax invoices and legal policies (privacy, returns, cancellation, shipping).
+5. Courier API integration, PIN-code serviceability, COD reconciliation and fraud prevention, live order statuses and notifications.
+6. Add Razorpay or other India payment gateway using provider-hosted checkout and verified payment webhooks. Never accept raw card data on HiteStore servers.
+7. Real customer QA, staging on compatible hosting, domain renewal, final backup, SSL, privacy and uptime review; only then cut the Hostinger domain over.
 
-**Not a live checkout:** Real COD orders require a secure database and API, customer address and consent, PIN code serviceability verification, shipping partner support, fraud prevention and COD settlement reconciliation. Do not deploy this prototype publicly as a checkout system.
+**Do not publish this V3 code to a public server.** `server.js` intentionally binds only to 127.0.0.1. It does not contain production protections.
+
+### Checkout validation patch
+V3 checkout now displays one error per failed attempt and returns the specific invalid delivery field. Address line 1 requires at least eight characters, a 10-digit mobile, and PIN six digits starting 1–9. This is local-only demo functionality.
