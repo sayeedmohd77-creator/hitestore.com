@@ -19,3 +19,10 @@ Test locally with `node server.js`, then open `http://localhost:3009`:
 - [ ] Admin > Demo settings > Reset demo data, and confirm restored state.
 
 **Before production:** authentication, customer accounts, secure payments, real order processing, GST invoices, product photography, stock locking, legal pages, shipping, returns, database, admin security, backups, monitoring and deployment are all outstanding.
+
+## V2 QA
+- [ ] Shop brand filter narrows product cards; price and available-only filters combine correctly.
+- [ ] Search SKU HT-P02 shows Weekend Midi Dress.
+- [ ] Admin stock table shows SKU, in-stock/low/out-of-stock labels, and low-stock totals.
+- [ ] Export Inventory CSV downloads a file with product SKUs and quantities.
+- [ ] Existing cart, wishlist and demo order workflows still work.

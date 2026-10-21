@@ -86,3 +86,8 @@ node --check .\js\data.js
 ```
 
 Also manually check home, category search, product/size selection, cart, coupon, placing a **demo** order, inventory deduction, and admin stock changes.
+
+## V2: Catalogue and inventory enhancement
+Shop now filters by brand, price ceiling, in-stock availability, size and category, and search supports SKUs (`HT-P02`). Local demo admin at `/#/admin` shows SKUs, a low-stock counter and a CSV inventory download. Demo records remain only in this browser (no backend login or payments).
+
+To update an existing GitHub-linked localhost installation, close any editors, back up your files, extract the V2 patch into your project folder, and reload Chrome (Ctrl+F5). Verify tests before committing.
