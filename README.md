@@ -28,7 +28,7 @@ If port 3009 is busy, set an alternate port with `$env:PORT=3010; node server.js
 - Responsive homepage, category sections and promotional editorial panels.
 - Men/Women/Kids/Accessories catalogue, product pages, search, category/size filters, price/discount/rating sorting.
 - Product sizes, colour information, inventory, wishlist, quantity-controlled shopping cart.
-- **WELCOME10** demo coupon, demo shipping threshold, non-payment checkout simulation and demo order history.
+- **WELCOME10** demo coupon, demo shipping threshold, **Cash on Delivery (COD) demo checkout**, and local demo order history.
 - Demo `/admin` dashboard: inventory changes, add/delete custom demo products, simulated order status, reset.
 - Data persists **only in this browser's localStorage**, not between devices.
 - Product art is illustrative (offline SVGs), not licensed brand photography or real inventory.
@@ -71,7 +71,7 @@ For future changes: `git add .; git commit -m "Update storefront"; git push`.
 
 ## Important limitations — NOT production-ready
 
-This is a **front-end proof of concept** with an offline local server. There is no secure sign-in, persistent server-side database, legitimate payment gateway, secure order processing, stock locking, product image uploads, courier tracking, tax-invoice engine, audit logging, or customer data protection. **Do not deploy this demo as a live public store** or collect real buyer information. Before launch, add a properly authenticated backend or migrate storefront to WooCommerce, configure payments/shipping/GST/privacy/refunds and use real photos and branding. Hostinger Website Builder source files do not automatically sync with this project; the existing domain/site is untouched.
+This is a **front-end proof of concept** with an offline local server. There is no secure sign-in, persistent server-side database, legitimate payment gateway, real COD collections, delivery serviceability validation, secure order processing, stock locking, product image uploads, courier tracking, tax-invoice engine, audit logging, or customer data protection. **Do not deploy this demo as a live public store** or collect real buyer information. Before launch, add a properly authenticated backend or migrate storefront to WooCommerce, configure payments/shipping/GST/privacy/refunds and use real photos and branding. Hostinger Website Builder source files do not automatically sync with this project; the existing domain/site is untouched.
 
 ## Stack
 
@@ -91,3 +91,9 @@ Also manually check home, category search, product/size selection, cart, coupon,
 Shop now filters by brand, price ceiling, in-stock availability, size and category, and search supports SKUs (`HT-P02`). Local demo admin at `/#/admin` shows SKUs, a low-stock counter and a CSV inventory download. Demo records remain only in this browser (no backend login or payments).
 
 To update an existing GitHub-linked localhost installation, close any editors, back up your files, extract the V2 patch into your project folder, and reload Chrome (Ctrl+F5). Verify tests before committing.
+
+## Cash on Delivery demo (October 2026)
+
+The bag page shows a selected Cash on Delivery option and a disabled Online Payment (coming soon) option. Creating a COD **demo** order stores `paymentMethod: COD` and `paymentStatus: PENDING_COLLECTION` in browser storage, without collecting real delivery details or charging anyone. Order history and the admin demo panel show payment status. The admin demo can mark COD as *simulated collected* to test the workflow.
+
+**Not a live checkout:** Real COD orders require a secure database and API, customer address and consent, PIN code serviceability verification, shipping partner support, fraud prevention and COD settlement reconciliation. Do not deploy this prototype publicly as a checkout system.

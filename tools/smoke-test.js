@@ -22,8 +22,18 @@ route('/shop?category=Women');assert(root.innerHTML.includes('Women collection')
 route('/product/p02');assert(root.innerHTML.includes('Weekend Midi Dress'),'product detail');
 action('add-to-cart','p02');assert(JSON.parse(storage.get('hitestore_cart')).length===1,'add to cart saves local data');
 route('/cart');assert(root.innerHTML.includes('Order summary'),'cart summary');
+assert(root.innerHTML.includes('Cash on Delivery (COD)'),'COD checkout option displayed');
+assert(root.innerHTML.includes('value="ONLINE" disabled'),'online payment disabled in demo');
+assert(root.innerHTML.includes('Amount due on delivery'),'COD due amount shown');
 action('place-order');assert(JSON.parse(storage.get('hitestore_orders')).length===1,'demo checkout creates local order');
+assert(JSON.parse(storage.get('hitestore_orders'))[0].paymentMethod==='COD','order records COD as payment method');
+assert(JSON.parse(storage.get('hitestore_orders'))[0].paymentStatus==='PENDING_COLLECTION','new COD order awaits collection');
+route('/orders');assert(root.innerHTML.includes('Payment pending (demo)'),'order history shows COD pending');
 assert(JSON.parse(storage.get('hitestore_stock'))['p02']===14,'demo order deducts stock');
 route('/admin');assert(root.innerHTML.includes('Inventory manager'),'admin inventory panel');
+action('admin-tab',undefined,{tab:'orders'});assert(root.innerHTML.includes('Pending collection (demo)'),'admin displays pending COD collection');
+const codId=JSON.parse(storage.get('hitestore_orders'))[0].id;action('mark-cod-collected',codId);
+assert(JSON.parse(storage.get('hitestore_orders'))[0].paymentStatus==='SIMULATED_COLLECTED','demo admin can mark COD collected');
+route('/orders');assert(root.innerHTML.includes('Marked collected (demo)'),'order history shows collected status');
 route('/wishlist');action('wishlist','p01');assert(JSON.parse(storage.get('hitestore_wishes')).includes('p01'),'wishlist persists');
 console.log('All VM view + interaction tests passed');

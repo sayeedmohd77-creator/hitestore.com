@@ -13,3 +13,20 @@
 @media(max-width:1030px){.brand-logo-header{width:115px;}}
 @media(max-width:740px){.brand-logo-header{width:102px;}.brand-logo-footer{width:192px;}}
 @media(max-width:400px){.brand-logo-header{width:85px;}.header-primary{gap:8px;}.header-actions{gap:7px;}}
+
+/* HiteStore COD payment selection — offline prototype only */
+.payment-methods{border:0;padding:0;margin:20px 0 16px;min-width:0}
+.payment-methods legend{font-size:11px;letter-spacing:1px;font-weight:900;margin-bottom:12px}
+.payment-choice{display:flex;align-items:center;gap:12px;padding:15px 12px;margin-bottom:9px;background:#fff;border:1px solid var(--line);cursor:pointer}
+.payment-choice.selected{border-color:#53765b;background:#f5f9f4}
+.payment-choice input{width:17px;height:17px;accent-color:#53765b;flex:0 0 auto}
+.payment-choice span:nth-of-type(1){display:block;flex:1;min-width:0}
+.payment-choice strong{display:block;color:var(--ink);font-size:12px;line-height:1.5}
+.payment-choice small{display:block;color:var(--muted);font-size:11px;line-height:1.6;margin-top:4px}
+.payment-choice .choice-label{font-size:9px;color:#53765b;font-weight:900;letter-spacing:.6px}
+.payment-choice.disabled{background:#faf8f5;opacity:.68;cursor:not-allowed}
+.cod-due{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#f5f9f4;border:1px solid #d3e2ce;padding:13px 14px;font-size:12px;margin:10px 0 16px}
+.cod-due strong{font-size:17px;color:#2d4734}
+.order-payment{font-weight:700;color:#53765b!important}
+.order-admin-actions{display:flex;flex-direction:column;gap:10px;align-items:flex-start;min-width:170px}
+.order-admin-actions button:disabled{color:#aaa;cursor:default}
