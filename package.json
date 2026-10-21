@@ -1,0 +1,9 @@
+{
+  "name": "hitestore-localhost",
+  "private": true,
+  "version": "0.1.0",
+  "description": "HiteStore offline fashion storefront prototype",
+  "scripts": {"start":"node server.js","dev":"node server.js","check":"node --check server.js && node --check js/app.js && node --check js/data.js", "test":"node tools/smoke-test.js"},
+  "engines": {"node": ">=18"},
+  "license": "UNLICENSED"
+}
