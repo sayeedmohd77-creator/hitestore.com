@@ -2,3 +2,14 @@
 
 /* V2 catalogue + inventory indicators */
 .inventory-actions{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:15px 0 20px}.inventory-actions p{font-size:12px;color:var(--muted)}.stock-level{display:block;font-size:10px;font-weight:700;margin-top:5px}.stock-level.healthy{color:#53765b}.stock-level.running-low{color:#ae6b1e}.stock-level.sold-out{color:#bf4338}.admin-table code{font-size:11px;white-space:nowrap}@media(max-width:740px){.inventory-actions{display:block}.inventory-actions .btn{margin-top:8px}}
+
+/* HiteStore's supplied official logo — desktop and mobile */
+.brand-logo{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;line-height:0;max-width:100%;background:#fff;}
+.brand-logo img{display:block;width:100%;height:auto;max-width:100%;object-fit:contain;}
+.brand-logo-header{width:145px;}
+.brand-logo-footer{width:224px;border-radius:4px;overflow:hidden;}
+.footer-brand .brand-logo-footer{box-shadow:0 1px 0 rgba(0,0,0,.06);}
+@media(max-width:1280px){.brand-logo-header{width:131px;}}
+@media(max-width:1030px){.brand-logo-header{width:115px;}}
+@media(max-width:740px){.brand-logo-header{width:102px;}.brand-logo-footer{width:192px;}}
+@media(max-width:400px){.brand-logo-header{width:85px;}.header-primary{gap:8px;}.header-actions{gap:7px;}}
