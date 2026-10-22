@@ -8,6 +8,7 @@ const esc = val => String(val ?? '').replace(/[&<>"']/g, x => ({'&':'&amp;','<':
 const load = (key, fallback) => { try { let x=localStorage.getItem('hitestore_'+key); return x ? JSON.parse(x) : fallback; } catch { return fallback; } };
 const save = (key, value) => { try { localStorage.setItem('hitestore_'+key, JSON.stringify(value)); } catch { toast('Local storage is unavailable. Changes may not be saved.'); } };
 const seed = window.HITESTORE_SEED || [];
+let serverCatalog = [];
 let custom = load('custom', []); if (!Array.isArray(custom)) custom=[];
 let stockChanges = load('stock', {});
 let cart = load('cart', []); if (!Array.isArray(cart)) cart=[];
@@ -18,13 +19,27 @@ let selectedSize = '';
 let detailQty = 1;
 let adminTab = 'products';
 let toastTimer;
-const catalog = () => [...seed, ...custom].map(p => ({...p,stock: Number(stockChanges[p.id] ?? p.stock)}));
+const catalog = () => {
+ const remote=new Map(serverCatalog.map(p=>[p.id,p]));
+ return [...seed,...custom,...serverCatalog.filter(p=>!seed.some(s=>s.id===p.id)&&!custom.some(c=>c.id===p.id))].map(p=>{
+  const online=remote.get(p.id),merged=online?{...p,...online}:p;
+  return {...merged,stock:Number(online?.stock??stockChanges[p.id]??p.stock)};
+ });
+};
+function refreshCatalog(){
+ if(typeof fetch!=='function')return;
+ fetch('/api/v4/catalog',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(data=>{
+  if(!data?.products)return;serverCatalog=data.products;
+  const p=location.hash.slice(1).split('?')[0];
+  if(!['/account','/checkout','/my-orders','/manage-orders','/catalog-admin','/returns'].includes(p))render();
+ }).catch(()=>{});
+}
 const product = id => catalog().find(p => p.id === id);
 const skuFor = p => p.sku || 'HT-' + p.id.toUpperCase();
 const discount = p => Math.round((1-p.price/p.mrp)*100);
 const imageFor = p => `./assets/${esc(p.id)}.svg`;
 const fallbackImage = type => `./assets/${({shirt:'p01',dress:'p02',kurta:'p04',jeans:'p05',jacket:'p06',sneaker:'p07',bag:'p08',hoodie:'p09'})[type]||'p01'}.svg`;
-const pic = p => p.id.startsWith('custom-') ? fallbackImage(p.type) : imageFor(p);
+const pic = p => p.imagePath?.startsWith('/product-images/') ? p.imagePath : p.id.startsWith('custom-')||p.id.startsWith('srv-') ? fallbackImage(p.type) : imageFor(p);
 const icon = (name) => ({heart:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 5.9a5 5 0 0 0-7.1 0L12 7.6l-1.7-1.7a5 5 0 0 0-7.1 7.1L12 21l8.8-8a5 5 0 0 0 0-7.1Z"/></svg>',arrow:'<span aria-hidden="true">↗</span>',bag:'<span aria-hidden="true">↗</span>'})[name] || '';
 function toast(message){const el=$('#toast'); if(!el)return; el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2800)}
 function headerCounters(){const count=cart.reduce((s,c)=>s+c.qty,0);[['#cart-count',count],['#wish-count',wishes.length]].forEach(([sel,n])=>{const node=$(sel);node.textContent=n;node.hidden=n===0;}); $('#year').textContent=new Date().getFullYear()}
@@ -60,7 +75,7 @@ function exportInventory(){
  const a=document.createElement('a');a.href=url;a.download='hitestore-demo-inventory.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
  toast('Inventory CSV exported (demo data).');
 }
-function render(scroll=false){const {path,params}=hashPath();headerCounters();document.title='HiteStore | '+(path==='/shop'?'Shop':path.startsWith('/product/')?'Product':path==='/cart'?'Shopping Bag':path==='/wishlist'?'Wishlist':path==='/orders'?'Orders':path==='/admin'?'Admin':'Fashion For Every Day');if(path==='/')root.innerHTML=home();else if(path==='/shop')root.innerHTML=shop(params);else if(path.startsWith('/product/'))root.innerHTML=detail(product(decodeURIComponent(path.slice(9))));else if(path==='/cart')root.innerHTML=cartPage();else if(path==='/wishlist')root.innerHTML=wishlistPage();else if(path==='/orders')root.innerHTML=ordersPage();else if(path==='/admin')root.innerHTML=adminPage();else if(['/account','/checkout','/my-orders','/manage-orders'].includes(path)){window.HiteStoreV3?.show(path); if(!window.HiteStoreV3)root.innerHTML='<div class="content-wide page-wrap">Loading V3 account service…</div>';}else root.innerHTML=`<div class="content-wide page-wrap">${emptyState('Page not found.','Try heading back to the collection.')}</div>`;if(scroll)window.scrollTo({top:0,behavior:'instant'});}
+function render(scroll=false){const {path,params}=hashPath();headerCounters();document.title='HiteStore | '+(path==='/shop'?'Shop':path.startsWith('/product/')?'Product':path==='/cart'?'Shopping Bag':path==='/wishlist'?'Wishlist':path==='/orders'?'Orders':path==='/admin'?'Admin':'Fashion For Every Day');if(path==='/')root.innerHTML=home();else if(path==='/shop')root.innerHTML=shop(params);else if(path.startsWith('/product/'))root.innerHTML=detail(product(decodeURIComponent(path.slice(9))));else if(path==='/cart')root.innerHTML=cartPage();else if(path==='/wishlist')root.innerHTML=wishlistPage();else if(path==='/orders')root.innerHTML=ordersPage();else if(path==='/admin')root.innerHTML=adminPage();else if(['/catalog-admin','/returns'].includes(path)){window.HiteStoreV4?.show(path);if(!window.HiteStoreV4)root.innerHTML='<div class="content-wide page-wrap">Loading V4 management…</div>';}else if(['/account','/checkout','/my-orders','/manage-orders'].includes(path)){window.HiteStoreV3?.show(path); if(!window.HiteStoreV3)root.innerHTML='<div class="content-wide page-wrap">Loading V3 account service…</div>';}else root.innerHTML=`<div class="content-wide page-wrap">${emptyState('Page not found.','Try heading back to the collection.')}</div>`;if(scroll)window.scrollTo({top:0,behavior:'instant'});}
 function addCart(id,size,qty=1){const p=product(id);if(!p||p.stock<1){toast('This product is currently out of stock.');return}if(!p.sizes.includes(size)){toast('Please select a size.');return}const existing=cart.find(x=>x.id===id&&x.size===size);const current=cart.filter(x=>x.id===id).reduce((s,x)=>s+x.qty,0);if(current+qty>p.stock){toast(`Only ${p.stock} item(s) available in this demo.`);return}if(existing)existing.qty+=qty;else cart.push({id,size,qty});save('cart',cart);render();toast('Added to your bag ✓')}
 function toggleWish(id){if(!product(id))return;wishes=wishes.includes(id)?wishes.filter(x=>x!==id):[...wishes,id];save('wishes',wishes);render();toast(wishes.includes(id)?'Saved to your wishlist ♡':'Removed from wishlist')}
 function updateCart(key,diff){const entry=cart.find(x=>`${x.id}:${x.size}`===key);if(!entry)return;const p=product(entry.id);if(!p)return;if(diff>0&&cart.filter(x=>x.id===p.id).reduce((s,x)=>s+x.qty,0)>=p.stock){toast('No more stock available.');return}entry.qty+=diff;cart=cart.filter(x=>x.qty>0);save('cart',cart);render()}
@@ -87,5 +102,7 @@ window.HiteStoreV3Cart=()=>cart.map(x=>({...x,name:product(x.id)?.name||'Unknown
 window.HiteStoreV3Coupon=()=>coupon;
 window.HiteStoreV3ClearCart=()=>{cart=[];coupon='';save('cart',cart);save('coupon',coupon);headerCounters()};
 window.addEventListener('hashchange',()=>{selectedSize='';detailQty=1;render(true)});
+window.HiteStoreRefreshCatalog=refreshCatalog;
+refreshCatalog();
 render();
 })();

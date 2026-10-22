@@ -40,3 +40,20 @@
 - [ ] Enter a 10-digit invented mobile number and a full fictitious street address with at least 8 characters, a city, state and a six-digit PIN beginning 1–9.
 - [ ] Submit one demo COD order and confirm it appears under `#/my-orders` with payment pending.
 - [ ] This is still LOCAL TEST ONLY: do not enter any real customer details or publish to the live domain.
+
+## V4 browser acceptance (invented test data only)
+
+- [ ] Restart the V4 server, with a local 12+ character `HITESTORE_ADMIN_PASSWORD`. Confirm `http://localhost:3009/api/health` returns `version:4`.
+- [ ] Staff Orders `#/manage-orders` accepts the configured test password (not displayed or shared).
+- [ ] `#/catalog-admin` shows existing seed catalogue and server stock; `#/admin` is clearly still browser-only demo.
+- [ ] Create product `HT-V4-TEST-001`, size `S,M` and then allocate stock `S=2`, `M=1`. Refresh and verify values persist.
+- [ ] Upload a test JPEG/PNG/WebP photo (under 650 KB) to the new server product. Verify it displays and persists after a restart.
+- [ ] Edit the server product price/name and confirm the storefront catalogue updates after a Chrome refresh.
+- [ ] Change sample PIN prefixes in staff settings, check a sample 6-digit PIN on `#/checkout`, and verify an out-of-zone PIN is rejected.
+- [ ] Place a simulated COD test order for size `M=1`; confirm another size `M=1` order cannot be created with no remaining size stock.
+- [ ] Staff transitions a test order through PACKED, SHIPPED and DELIVERED. Confirm the order still exists after restart.
+- [ ] Customer opens `#/returns` and requests a test return on a delivered order. Staff approves the return in `#/catalog-admin`.
+- [ ] Confirm approving an existing return a second time is refused and the selected size is restocked once.
+- [ ] Verify no actual payment, refund, parcel booking, courier PIN lookup or email is triggered.
+- [ ] Run `npm.cmd run check` and `npm.cmd test`; do not deploy publicly.
+- [ ] Review `git status --short` and `git diff --cached --stat` prior to pushing. Never add `runtime/` or any test password.

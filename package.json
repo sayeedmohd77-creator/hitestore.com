@@ -1,13 +1,13 @@
 {
   "name": "hitestore-localhost",
   "private": true,
-  "version": "0.3.0",
-  "description": "HiteStore V3 local-only commerce prototype with test accounts, addresses and server-side COD orders",
+  "version": "0.4.0",
+  "description": "HiteStore V4 localhost demo: server catalogue, variant stock, demo shipping zones, return requests",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "node --check server.js && node --check backend/dev-commerce.js && node --check js/app.js && node --check js/data.js && node --check js/v3.js",
-    "test": "node tools/smoke-test.js && node tools/v3-api-test.js"
+    "check": "node --check server.js && node --check backend/dev-commerce.js && node --check js/app.js && node --check js/data.js && node --check js/v3.js && node --check backend/v4.js && node --check js/v4.js",
+    "test": "node tools/smoke-test.js && node tools/v3-api-test.js && node tools/v4-api-test.js"
   },
   "engines": {
     "node": ">=18"

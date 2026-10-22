@@ -36,14 +36,16 @@ function closeSession(req,res){sessions.delete(cookies(req));res.setHeader('Set-
 function sessionData(session){if(!session)return {authenticated:false};if(session.role==='admin')return {authenticated:true,role:'admin',csrf:session.csrf};const user=db.accounts.find(x=>x.id===session.accountId);return user?{authenticated:true,role:'customer',name:user.name,email:user.email,csrf:session.csrf}:{authenticated:false}}
 function throttleOK(req,key){const id=(req.socket.remoteAddress||'local')+':'+key,now=Date.now();let item=throttle.get(id);if(!item||now-item.start>15*60*1000){item={start:now,count:0};throttle.set(id,item)}item.count++;return item.count<=12}
 function sameOrigin(req){const origin=req.headers.origin;if(!origin)return true;try{const u=new URL(origin);const host=req.headers.host;return u.host===host&&(u.hostname==='localhost'||u.hostname==='127.0.0.1')}catch{return false}}
-async function readBody(req){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>MAX_BODY){const err=Error('Payload too large');err.status=413;throw err}chunks.push(chunk)}let v;try{v=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{const err=Error('Invalid JSON');err.status=400;throw err}if(!v||typeof v!=='object'||Array.isArray(v))throw Object.assign(Error('Expected JSON object'),{status:400});return v}
+async function readBody(req,maxBody=MAX_BODY){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>maxBody){const err=Error('Payload too large');err.status=413;throw err}chunks.push(chunk)}let v;try{v=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{const err=Error('Invalid JSON');err.status=400;throw err}if(!v||typeof v!=='object'||Array.isArray(v))throw Object.assign(Error('Expected JSON object'),{status:400});return v}
 function auth(req,res,role){const s=getSession(req);if(!s||s.role!==role){fail(res,401,'Sign in required');return null}return s}
 function csrf(req,res,s){if(!s||req.headers['x-csrf-token']!==s.csrf){fail(res,403,'Invalid session security token');return false}return true}
-function publicOrder(o){return {id:o.id,created:o.created,items:o.items,total:o.total,subtotal:o.subtotal,discount:o.discount,shipping:o.shipping,status:o.status,paymentMethod:'COD',paymentStatus:o.paymentStatus,delivery:o.delivery}}
+function publicOrder(o){return {returnRequest:o.returnRequest||null,id:o.id,created:o.created,items:o.items,total:o.total,subtotal:o.subtotal,discount:o.discount,shipping:o.shipping,status:o.status,paymentMethod:'COD',paymentStatus:o.paymentStatus,delivery:o.delivery}}
+const v4=require('./v4')({db,persist,seed,auth,csrf,readBody,json,fail,clean,root,dataDir});
 function handleAPI(req,res){return (async()=>{
   if(!sameOrigin(req))return fail(res,403,'Cross-site request blocked');
   const method=req.method,url=new URL(req.url,'http://localhost');const p=url.pathname;
-  if(method==='GET'&&p==='/api/health')return json(res,200,{ok:true,mode:'LOCAL_DEVELOPMENT_ONLY',version:3});
+  if(p.startsWith('/api/v4/'))return v4.handle(req,res,p,method,url);
+  if(method==='GET'&&p==='/api/health')return json(res,200,{ok:true,mode:'LOCAL_DEVELOPMENT_ONLY',version:4});
   if(method==='GET'&&p==='/api/session')return json(res,200,sessionData(getSession(req)));
   if(method==='POST'&&p==='/api/register'){
     if(!throttleOK(req,'register'))return fail(res,429,'Try again later');
@@ -77,7 +79,7 @@ function handleAPI(req,res){return (async()=>{
     const s=auth(req,res,'customer');if(!s||!csrf(req,res,s))return;
     const b=await readBody(req),delivery=b.delivery||{},items=b.items;
     if(!Array.isArray(items)||!items.length||items.length>30)return fail(res,400,'Cart must contain 1–30 lines');
-    const d={name:clean(delivery.name,80),phone:clean(delivery.phone,16),line1:clean(delivery.line1,160),line2:clean(delivery.line2,160),city:clean(delivery.city,80),state:clean(delivery.state,80),pin:clean(delivery.pin,6)};
+    const d={name:clean(delivery.name,80),phone:clean(delivery.phone,16),line1:clean(delivery.line1,160),line2:clean(delivery.line2,160),city:clean(delivery.city,80),state:clean(delivery.state,80),pin:clean(delivery.pin,20)};
     if(d.name.length<2)return fail(res,400,'Recipient name must contain at least 2 characters.');
     if(!/^\d{10}$/.test(d.phone))return fail(res,400,'Enter an Indian mobile number with exactly 10 digits.');
     if(d.line1.length<8)return fail(res,400,'Address line 1 needs at least 8 characters (include building and street).');
@@ -85,16 +87,17 @@ function handleAPI(req,res){return (async()=>{
     if(d.state.length<2)return fail(res,400,'State must contain at least 2 characters.');
     if(!/^[1-9]\d{5}$/.test(d.pin))return fail(res,400,'Enter a valid six-digit Indian PIN code (the first digit cannot be 0).');
     if(b.paymentMethod!=='COD')return fail(res,400,'Only simulated COD orders are supported');
-    let subtotal=0;const quantities={},orderItems=[];
-    for(const item of items){const id=clean(item.id,40),size=clean(item.size,20),qty=item.qty;const prod=seed.find(x=>x.id===id);
+    let subtotal=0;const quantities={},aggregate={},orderItems=[];
+    for(const item of items){const id=clean(item.id,40),size=clean(item.size,20),qty=item.qty;const prod=v4.product(id);
       if(!prod||!prod.sizes.includes(size)||!Number.isInteger(qty)||qty<1||qty>10)return fail(res,400,'Invalid product, size or quantity. Custom browser products are not supported by V3 yet.');
-      quantities[id]=(quantities[id]||0)+qty;if(quantities[id]>(db.stock[id]??0))return fail(res,409,'Insufficient stock for '+prod.name);
+      const key=id+'|'+size;quantities[key]=(quantities[key]||0)+qty;aggregate[id]=(aggregate[id]||0)+qty;if(quantities[key]>v4.available(id,size)||(!v4.tracksSizes(id)&&aggregate[id]>v4.totalStock(id)))return fail(res,409,'Insufficient stock for '+prod.name+' ('+size+')');
       subtotal+=prod.price*qty;orderItems.push({id,size,qty,name:prod.name,price:prod.price});
     }
     if(subtotal>250000)return fail(res,400,'Local demo order amount exceeds safety limit');
-    const discount=clean(b.coupon,20).toUpperCase()==='WELCOME10'?Math.round(subtotal*0.1):0,shipping=subtotal>=1999?0:99;
+    if(!v4.served(d.pin))return fail(res,422,'This PIN is outside the configured DEMO delivery-zone prefixes. Not a real courier check.');
+    const discount=clean(b.coupon,20).toUpperCase()==='WELCOME10'?Math.round(subtotal*0.1):0,shipping=v4.shipping(subtotal);
     const order={id:'HT-LOCAL-'+crypto.randomBytes(5).toString('hex').toUpperCase(),customerId:s.accountId,created:new Date().toISOString(),items:orderItems,subtotal,discount,shipping,total:subtotal-discount+shipping,delivery:d,status:'PLACED_DEMO',paymentMethod:'COD',paymentStatus:'PENDING_COLLECTION_DEMO'};
-    for(const [id,qty] of Object.entries(quantities))db.stock[id]-=qty;
+    for(const item of orderItems)v4.take(item.id,item.size,item.qty);
     db.orders.unshift(order);persist();return json(res,201,{order:publicOrder(order),note:'TEST ORDER ONLY. No actual courier, payment or fulfilment.'});
   }
   if(method==='GET'&&p==='/api/admin/orders'){
@@ -108,7 +111,7 @@ function handleAPI(req,res){return (async()=>{
       if(!['PACKED_DEMO','SHIPPED_DEMO','DELIVERED_DEMO','CANCELLED_DEMO'].includes(b.status))return fail(res,400,'Invalid status');
       const transitions={PLACED_DEMO:['PACKED_DEMO','CANCELLED_DEMO'],PACKED_DEMO:['SHIPPED_DEMO','CANCELLED_DEMO'],SHIPPED_DEMO:['DELIVERED_DEMO'],DELIVERED_DEMO:[],CANCELLED_DEMO:[]};
       if(!transitions[o.status].includes(b.status))return fail(res,409,'Status transition not allowed');
-      if(b.status==='CANCELLED_DEMO'){for(const item of o.items)db.stock[item.id]+=item.qty}
+      if(b.status==='CANCELLED_DEMO'){for(const item of o.items)v4.restore(item.id,item.size,item.qty)}
       o.status=b.status;
     }
     persist();return json(res,200,{order:publicOrder(o)});

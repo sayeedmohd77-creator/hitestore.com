@@ -10,6 +10,15 @@ const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=u
 const server=http.createServer((req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
   let pathname;try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname)}catch{return res.writeHead(400).end('Bad request')}
+  if(/^\/product-images\/[a-f0-9-]{36}\.(?:jpg|png|webp)$/.test(pathname)){
+    if(!['GET','HEAD'].includes(req.method))return res.writeHead(405).end('Method not allowed');
+    const filename=path.basename(pathname),file=path.join(process.env.HITESTORE_DATA_DIR || path.join(root,'runtime'),'product-images',filename);
+    return fs.stat(file,(err,st)=>{if(err||!st.isFile())return res.writeHead(404).end('Not found');
+      const contentType=filename.endsWith('.jpg')?'image/jpeg':filename.endsWith('.png')?'image/png':'image/webp';
+      res.writeHead(200,{'Content-Type':contentType,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+      if(req.method==='HEAD')res.end();else fs.createReadStream(file).pipe(res);
+    });
+  }
   if(pathname.startsWith('/api/'))return handleAPI(req,res);
   if(!['GET','HEAD'].includes(req.method))return res.writeHead(405).end('Method not allowed');
   if(pathname==='/'||pathname==='/index.html')pathname='/index.html';
@@ -19,4 +28,4 @@ const server=http.createServer((req,res)=>{
   if(!file.startsWith(root+path.sep))return res.writeHead(403).end('Forbidden');
   fs.stat(file,(err,stat)=>{if(err||!stat.isFile())return res.writeHead(404).end('Not found');res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'});if(req.method==='HEAD')res.end();else fs.createReadStream(file).pipe(res)});
 });
-server.listen(port,'127.0.0.1',()=>console.log(`HiteStore V3 LOCAL ONLY running at http://localhost:${port}\nAccount, COD and admin APIs are for LOCAL DEVELOPMENT. No real orders/payments.`));
+server.listen(port,'127.0.0.1',()=>console.log(`HiteStore V4 LOCAL ONLY running at http://localhost:${port}\nAccount, COD and admin APIs are for LOCAL DEVELOPMENT. No real orders/payments.`));
